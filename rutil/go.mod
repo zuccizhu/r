@@ -1,3 +1,3 @@
-module github.com/bytedy/libs/rutil
+module github.com/zuccizhu/r/rutil
 
 go 1.25
