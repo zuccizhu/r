@@ -2,6 +2,7 @@ package rconf
 
 import (
 	"bytes"
+	"cmp"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -27,11 +28,11 @@ func InitConfig[T any](configBytes []byte, tPtr *T) (vv *viper.Viper, err error)
 		panic(fmt.Errorf("viper.ReadConfig error: %w", err))
 	}
 	extPath := v.GetString("app.ext-config-path")
-	extFileName := v.GetString("app.ext-config-file")
+	extFile := cmp.Or(v.GetString("app.ext-config-file"), "application")
 
-	slog.Info(fmt.Sprintf("load ext config path: %s, fileName: %s", extPath, extFileName))
+	slog.Info(fmt.Sprintf("load ext config path: %s, file: %s", extPath, extFile))
 
-	v.SetConfigName(extFileName)
+	v.SetConfigName(extFile)
 	v.AddConfigPath(v.GetString(extPath))
 
 	// 合并配置（外部配置会覆盖嵌入配置）
