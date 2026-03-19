@@ -19,7 +19,7 @@ var refreshTimer *time.Timer
 ////go:embed application.yaml
 //var configBytes []byte
 
-func InitConfig(configBytes []byte, vp func(viper *viper.Viper) error) {
+func InitConfig[T any](configBytes []byte, tPtr *T) (vv *viper.Viper, err error) {
 	v := viper.New()
 	v.SetConfigType("yaml")
 
@@ -46,10 +46,11 @@ func InitConfig(configBytes []byte, vp func(viper *viper.Viper) error) {
 	v.AutomaticEnv()
 	v.SetEnvPrefix("app_")
 
-	er := vp(v)
+	er := v.Unmarshal(tPtr)
 	if er != nil {
 		panic(er)
 	}
+	slog.Info(fmt.Sprintf("load config ok, conf: %+v", *tPtr))
 
 	v.WatchConfig()
 	v.OnConfigChange(func(e fsnotify.Event) {
@@ -61,10 +62,13 @@ func InitConfig(configBytes []byte, vp func(viper *viper.Viper) error) {
 		}
 		refreshTimer = time.AfterFunc(5*time.Second, func() {
 			slog.Info(fmt.Sprintf("config file changed: %s", e.Name))
-			er = vp(v)
+			er = v.Unmarshal(tPtr)
 			if er != nil {
-				slog.Error(fmt.Errorf("reload config err: %w", er).Error())
+				slog.Error(fmt.Errorf("reload config fail, err: %w", er).Error())
+			} else {
+				slog.Info(fmt.Sprintf("reload config ok, conf: %+v", *tPtr))
 			}
 		})
 	})
+	return v, nil
 }
