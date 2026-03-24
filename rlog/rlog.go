@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+type ctxLoggerKey struct{}
+
 func InitLog(handlers ...slog.Handler) {
 	var h slog.Handler
 	if len(handlers) == 0 {
@@ -19,6 +21,22 @@ func InitLog(handlers ...slog.Handler) {
 	}
 	l := slog.New(h)
 	slog.SetDefault(l)
+}
+
+func WithCxt(ctx context.Context, logger *slog.Logger) context.Context {
+	return context.WithValue(ctx, ctxLoggerKey{}, logger)
+}
+
+func FromCxt(ctx context.Context) *slog.Logger {
+	if log, ok := ctx.Value(ctxLoggerKey{}).(*slog.Logger); ok {
+		return log
+	}
+	return slog.Default()
+}
+
+func With(ctx context.Context, args ...any) context.Context {
+	subLogger := FromCxt(ctx).With(args...)
+	return WithCxt(ctx, subLogger)
 }
 
 func InfoF(format string, args ...any) {
